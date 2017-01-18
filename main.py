@@ -102,7 +102,7 @@ class NewPost(Handler):
 
 
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content)
+            p = Post(parent = blog_key(), user_id=self.user.key().id(), subject = subject, content = content)
             p.put()
             self.redirect('/%s' % str(p.key().id()))
         else:
