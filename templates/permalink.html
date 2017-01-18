@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="postdelete" >
+        <a class ="delete" href="/delete/{{post.key().id()}}">Delete</a>
+    </div>
+  {{post.render() | safe}}
+{% endblock %}
