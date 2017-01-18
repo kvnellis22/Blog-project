@@ -25,7 +25,7 @@ class Post(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
-    user_id = db.IntegerProperty(required=True)
+    user_id = db.ReferenceProperty(User)
 
     def render(self):
         self._render_text = self.content.replace('\n', '<br>')
