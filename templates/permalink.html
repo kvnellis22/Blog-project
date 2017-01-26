@@ -1,8 +1,29 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="postdelete" >
-        <a class ="delete" href="/delete/{{post.key().id()}}">Delete</a>
+    <div class="post_delete_edit" >
+        <a class ="delete" href="/delete/{{post.key().id()}}">Delete</a> |
+        <a class ="edit" href="/edit/{{post.key().id()}}">Edit</a>
     </div>
+
   {{post.render() | safe}}
+
+  <div class ="comment_form">
+        <form method="post" role = "form" class ="comment_form">
+                <label for="comment">Comment</label>
+                <input type="text" class = "form" id = "comment" name = "comment" value="">
+                <input type="submit">
+        </form>
+    </div>
+
+    <div class ="block">
+        {% for com in comments %}
+        <blockquote>
+            <p>{{ com.comment }}</p>
+            <a class ="delete" href="/deletecomment/{{post.key().id()}}/{{com.key().id()}}">Delete</a> |
+            <a class ="edit" href="/edit/{{post.key().id()}}/{{com.key().id()}}">Edit</a>
+            <footer>{{ com.getName() }}</footer>
+        </blockquote>
+        {% endfor %}
+    </div>
 {% endblock %}
