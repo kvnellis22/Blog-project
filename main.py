@@ -213,7 +213,7 @@ class Commentdelete(Handler):
             if self.user:
                 if com.user_id == self.user.key().id():
                     com.delete()
-                    self.redirect("/"+ post_id + "?comment_deleted=" + comment_id)
+                    self.redirect("/"+ post_id + "?deleted=" + comment_id)
                 else:
                     self.render("comment_error.html")
             else:
@@ -317,5 +317,5 @@ class Welcome(Handler):
 
 app = webapp2.WSGIApplication([
     ('/', BlogFront), ('/([0-9]+)', PostPage), ('/newpost', NewPost), ('/delete/([0-9]+)', Postdelete),
-    ('/deletecomment/([0-9]+/([0-9]+)', Commentdelete), ('/edit/([0-9]+)', Postedit), ('/signup', Register),
+    ('/deletecomment/([0-9]+)/([0-9]+)', Commentdelete), ('/edit/([0-9]+)', Postedit), ('/signup', Register),
     ('/welcome', Welcome), ('/login', Login), ('/logout', Logout)], debug=True)
