@@ -1,24 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h2>Edit Post</h2>
+  <h2>Edit Comment</h2>
 
     <form method="post">
-      <label>
-        <div>subject</div>
-        <input type="text" name="subject" value="{{subject}}">
+      <label for="subject">
+      Comment
       </label>
-
-      <label>
-        <div>blog</div>
-        <textarea name="content">{{content}}</textarea>
-      </label>
+      <input type="text" class="comment-form" id="comment" name="comment" value="{{comment}}">
 
       <div class="error">{{error}}</div>
 
       <input type="submit"> |
       <input type="button" value="Cancel" onClick="window.history.back();">
     </form>
-
-
 {% endblock %}
