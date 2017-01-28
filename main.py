@@ -28,6 +28,7 @@ from google.appengine.ext import db
 
 from user import User
 from post import Post
+from like import Like
 from comment import Comment
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
@@ -99,12 +100,14 @@ class PostPage(Handler):
         comments = db.GqlQuery("select * from Comment where post_id = " +
             post_id + " order by created desc")
 
+        likes = db.GqlQuery("select * from Like where post_id = " + post_id)
+
 
         if not post:
             self.error(404)
             return
 
-        self.render("permalink.html", post = post, comments = comments)
+        self.render("permalink.html", post = post, comments = comments, likenum = likes.count())
 
     def post(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
@@ -116,6 +119,21 @@ class PostPage(Handler):
 
         com = ""
         if self.user:
+            # like button section code
+            if self.request.get('like') and self.request.get('like') == "update":
+                likes = db.GqlQuery("select * from Like where post_id = " + post_id +
+                    "and user_id =" + str(self.user.key().id()))
+
+                if self.user.key().id() == post.user_id:
+                    self.render("like_error.html")
+
+                    return
+
+                elif likes.count() == 0:
+                    l = Like(parent=blog_key(), user_id = self.user.key().id(),
+                        post_id=int(post_id))
+                    l.put()
+             # commenting section code
             if self.request.get('comment'):
                 com = Comment(parent =blog_key(), user_id= self.user.key().id(),
                 post_id = int(post_id), comment = self.request.get('comment'))
@@ -126,7 +144,10 @@ class PostPage(Handler):
 
         comments = db.GqlQuery("select * from Comment where post_id = " + post_id + "order by created desc")
 
-        self.render("permalink.html", post = post, comments = comments, new = com)
+        likes = db.GqlQuery("select * from Like where post_id = " + post_id)
+
+
+        self.render("permalink.html", post = post, comments = comments, new = com, likenum = likes.count())
 
 class NewPost(Handler):
     def get(self):
@@ -157,8 +178,8 @@ class Postdelete(Handler):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
         if post: # checks to see if post exist
-            if self.user:
-                if post.user_id == self.user.key().id():
+            if self.user: # checks if user is logged in
+                if post.user_id == self.user.key().id(): # checks is user own post
                     post.delete()
                     self.render("user_success.html") # change to a template that says successful deletion
                 else:
@@ -173,8 +194,8 @@ class Postedit(Handler):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
         if post: # checks to see if post exist
-            if self.user:
-                if post.user_id == self.user.key().id():
+            if self.user: # checks if user is logged in
+                if post.user_id == self.user.key().id(): # checks is user own post
                     self.render("editpost.html", subject = post.subject, content = post.content)
                 else:
                     self.render("edit_error.html")# change to a template no access to edit
@@ -209,17 +230,51 @@ class Commentdelete(Handler):
     def get(self, post_id, comment_id):
         key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
         com = db.get(key)
-        if com:
-            if self.user:
-                if com.user_id == self.user.key().id():
+        if com: # checks if comment exist
+            if self.user:# checks if user is logged in
+                if com.user_id == self.user.key().id(): # checks if user owns comment
                     com.delete()
-                    self.redirect("/"+ post_id + "?deleted=" + comment_id)
+                    self.redirect("/"+ post_id +"?deleted=" + comment_id)
                 else:
                     self.render("comment_error.html")
             else:
                 self.redirect("/login")
         else:
-            self.render("post_error.html")
+            self.render("comment_no_exist.html")
+
+class Commentedit(Handler):
+    def get(self, post_id, comment_id):
+        key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+        com = db.get(key)
+        if com: # checks to see if comment exist
+            if self.user: # checks if user is logged in
+                if com.user_id == self.user.key().id(): # checks if user owns comment
+                    self.render("edit_comment.html", comment=com.comment)
+                else:
+                    self.render("comment_error.html")# change to a template no access to delete
+            else:
+                self.redirect("/login")# change to a template not logged in | login
+        else:
+            self.render("comment_no_exist.html")
+
+
+    def post(self, post_id, comment_id):
+        if not self.user:
+            self.render("edit_error.html")
+            return
+
+        comment = self.request.get('comment')
+
+        if comment:
+            key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+            com = db.get(key)
+            com.comment = comment
+            com.put()
+            self.redirect('/%s' % post_id)
+
+        else:
+            error = "Add content"
+            self.render("edit_comment.html", error=error)
 
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
@@ -317,5 +372,7 @@ class Welcome(Handler):
 
 app = webapp2.WSGIApplication([
     ('/', BlogFront), ('/([0-9]+)', PostPage), ('/newpost', NewPost), ('/delete/([0-9]+)', Postdelete),
-    ('/deletecomment/([0-9]+)/([0-9]+)', Commentdelete), ('/edit/([0-9]+)', Postedit), ('/signup', Register),
+    ('/deletecomment/([0-9]+)/([0-9]+)', Commentdelete),
+    ('/commentedit/([0-9]+)/([0-9]+)', Commentedit),
+    ('/edit/([0-9]+)', Postedit), ('/signup', Register),
     ('/welcome', Welcome), ('/login', Login), ('/logout', Logout)], debug=True)
